@@ -1,0 +1,274 @@
+--// Store Lucky Hub (By Zeternal)
+
+-- Delay de 1 segundo antes de iniciar
+task.wait(1)
+
+-- Enhanced Anti-Ban System
+local AntiBan = {
+    Enabled = true,
+    SuspicionLevel = 0,
+    MaxSuspicion = 10,
+    ActionCount = 0,
+    MaxActionsPerPeriod = 10,
+    ActionPeriod = 30,
+    LastActionTime = tick(),
+    ErrorRate = 0,
+    MaxErrorRate = 0.1,
+    RandomSeed = os.time(),
+    PauseOnSuspicion = true,
+    SuspicionTimeout = 60
+}
+
+math.randomseed(AntiBan.RandomSeed)
+
+-- Ban Detection System
+local function CheckBanStatus()
+    local currentTime = tick()
+    
+    -- Check action rate
+    if (currentTime - AntiBan.LastActionTime) < AntiBan.ActionPeriod then
+        AntiBan.ActionCount = AntiBan.ActionCount + 1
+        if AntiBan.ActionCount > AntiBan.MaxActionsPerPeriod then
+            AntiBan.SuspicionLevel = AntiBan.SuspicionLevel + 1
+            return true
+        end
+    else
+        AntiBan.ActionCount = 0
+        AntiBan.LastActionTime = currentTime
+    end
+    
+    -- Check error rate
+    if AntiBan.ErrorRate > AntiBan.MaxErrorRate then
+        AntiBan.SuspicionLevel = AntiBan.SuspicionLevel + 1
+        return true
+    end
+    
+    -- Check for suspicious patterns
+    if AntiBan.SuspicionLevel > AntiBan.MaxSuspicion * 0.7 then
+        return true
+    end
+    
+    return false
+end
+
+-- Preventive Measures
+local function ApplyPreventiveMeasures()
+    -- Randomize timing
+    local randomDelay = math.random(100, 500) / 100 -- 1-5 segundos
+    task.wait(randomDelay)
+    
+    -- Pause execution when suspicious
+    if AntiBan.PauseOnSuspicion and AntiBan.SuspicionLevel > AntiBan.MaxSuspicion * 0.8 then
+        local pauseTime = math.random(10, 30)
+        print("PAUSING FOR "..pauseTime.." SECONDS")
+        task.wait(pauseTime)
+    end
+    
+    -- Reset counters periodically
+    if tick() - AntiBan.LastActionTime > AntiBan.SuspicionTimeout then
+        AntiBan.SuspicionLevel = math.max(0, AntiBan.SuspicionLevel - 1)
+        AntiBan.ErrorRate = math.max(0, AntiBan.ErrorRate - 0.05)
+    end
+end
+
+-- Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Store Lucky",
+    LoadingTitle = "Store Lucky",
+    LoadingSubtitle = "by Zeternal",
+    Theme = "Default", 
+    DisableRayfieldPrompts = true,
+    DisableBuildWarnings = true,
+    ConfigurationSaving = { Enabled = false },
+    Discord = { Enabled = false },
+    KeySystem = false,
+})
+
+-- Aba principal
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+-- Aba de Segurança
+local SecurityTab = Window:CreateTab("Security", 4483362458)
+
+-- Aviso dentro do hub
+MainTab:CreateParagraph({
+    Title = "Aviso",
+    Content = "nao tentem vender, este script foi feito pela store lucky."
+})
+
+-- Status do Anti-Ban
+local AntiBanStatus = SecurityTab:CreateParagraph({
+    Title = "Sistema Anti-Ban",
+    Content = "Status: Ativo\nNível de Suspeita: 0/10"
+})
+
+-- Toggle do Anti-Ban
+SecurityTab:CreateToggle({
+    Name = "Ativar Sistema Anti-Ban",
+    CurrentValue = true,
+    Flag = "AntiBanToggle",
+    Callback = function(Value)
+        AntiBan.Enabled = Value
+        notify(Value and "Sistema Anti-Ban Ativado" or "Sistema Anti-Ban Desativado")
+    end,
+})
+
+-- Informações de Segurança
+SecurityTab:CreateParagraph({
+    Title = "Informações",
+    Content = "O sistema monitora ações suspeitas\ne pausa automaticamente se necessário"
+})
+
+-- Estados dos toggles
+local estiloOn = false
+local habilidadeOn = false
+local yenOn = false
+
+----------------------------------------------------------------
+-- 🔗 REMOTE (MANTIDO ORIGINAL)
+----------------------------------------------------------------
+local remote = game:GetService("ReplicatedStorage")
+    :WaitForChild("Packages")
+    :WaitForChild("_Index")
+    :WaitForChild("sleitnick_knit@1.7.0")
+    :WaitForChild("knit")
+    :WaitForChild("Services")
+    :WaitForChild("SeasonService")
+    :WaitForChild("RF")
+    :WaitForChild("RequestRankedReward")
+
+-- Função de notificação
+local function notify(msg)
+    Rayfield:Notify({
+        Title = "Store Lucky",
+        Content = msg,
+        Duration = 3,
+        Image = 4483362458,
+    })
+end
+
+-- Função segura para invocar remote
+local function SafeInvokeServer(value)
+    if not AntiBan.Enabled then
+        pcall(function()
+            remote:InvokeServer(value)
+        end)
+        return
+    end
+    
+    -- Aplicar medidas preventivas
+    ApplyPreventiveMeasures()
+    
+    -- Verificar status de suspeita
+    if CheckBanStatus() then
+        print("ALERTA: Comportamento suspeito detectado!")
+        AntiBanStatus:SetTitle("Sistema Anti-Ban")
+        AntiBanStatus:SetContent("Status: Alerta!\nNível de Suspeita: " .. AntiBan.SuspicionLevel .. "/10")
+        return
+    end
+    
+    -- Executar ação com delay randomizado
+    local success, err = pcall(function()
+        remote:InvokeServer(value)
+    end)
+    
+    if not success then
+        AntiBan.ErrorRate = AntiBan.ErrorRate + 0.01
+    else
+        AntiBan.ErrorRate = math.max(0, AntiBan.ErrorRate - 0.005)
+    end
+    
+    -- Atualizar status
+    AntiBanStatus:SetTitle("Sistema Anti-Ban")
+    AntiBanStatus:SetContent("Status: Ativo\nNível de Suspeita: " .. AntiBan.SuspicionLevel .. "/10")
+end
+
+----------------------------------------------------------------
+-- 🎯 Toggle de Estilo
+----------------------------------------------------------------
+local EstiloToggle = MainTab:CreateToggle({
+    Name = "Auto Estilo [ Bronze II ]",
+    CurrentValue = false,
+    Flag = "EstiloToggle",
+    Callback = function(Value)
+        estiloOn = Value
+        notify(estiloOn and "Estilo Ativado" or "Estilo Desativado")
+        
+        if estiloOn then
+            task.spawn(function()
+                while estiloOn do
+                    SafeInvokeServer(1)
+                    task.wait(math.random(150, 300) / 100) -- 1.5-3 segundos
+                end
+            end)
+        end
+    end,
+})
+
+----------------------------------------------------------------
+-- ⚙️ Toggle de Habilidade
+----------------------------------------------------------------
+local HabilidadeToggle = MainTab:CreateToggle({
+    Name = "Auto Habilidade [ Prata II ]",
+    CurrentValue = false,
+    Flag = "HabilidadeToggle",
+    Callback = function(Value)
+        habilidadeOn = Value
+        notify(habilidadeOn and "Habilidade Ativada" or "Habilidade Desativada")
+        
+        if habilidadeOn then
+            task.spawn(function()
+                while habilidadeOn do
+                    SafeInvokeServer(4)
+                    task.wait(math.random(150, 300) / 100) -- 1.5-3 segundos
+                end
+            end)
+        end
+    end,
+})
+
+----------------------------------------------------------------
+-- 💰 Toggle de Yen
+----------------------------------------------------------------
+local YenToggle = MainTab:CreateToggle({
+    Name = "Auto Yen [ Bronze III ]",
+    CurrentValue = false,
+    Flag = "YenToggle",
+    Callback = function(Value)
+        yenOn = Value
+        notify(yenOn and "💰 Yen Ativado" or "💰 Yen Desativado")
+        
+        if yenOn then
+            task.spawn(function()
+                while yenOn do
+                    SafeInvokeServer(2) -- Valor 2 para Yen
+                    task.wait(math.random(150, 300) / 100) -- 1.5-3 segundos
+                end
+            end)
+        end
+    end,
+})
+
+-- Botão de teste adicional
+MainTab:CreateButton({
+    Name = "Testar botão",
+    Callback = function()
+        print("Botão funcionando!")
+        notify("Hub funcionando corretamente!")
+    end,
+})
+
+-- Botão para resetar nível de suspeita
+SecurityTab:CreateButton({
+    Name = "Resetar Nível de Suspeita",
+    Callback = function()
+        AntiBan.SuspicionLevel = 0
+        AntiBan.ErrorRate = 0
+        AntiBan.ActionCount = 0
+        notify("Nível de suspeita resetado!")
+        AntiBanStatus:SetTitle("Sistema Anti-Ban")
+        AntiBanStatus:SetContent("Status: Ativo\nNível de Suspeita: 0/10")
+    end,
+})
