@@ -3,9 +3,38 @@
 -- Delay de 1 segundo antes de iniciar
 task.wait(1)
 
+-- Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Store Lucky",
+    LoadingTitle = "Store Lucky",
+    LoadingSubtitle = "by Zeternal",
+    Theme = "Default", 
+    DisableRayfieldPrompts = true,
+    DisableBuildWarnings = true,
+    ConfigurationSaving = { Enabled = false },
+    Discord = { Enabled = false },
+    KeySystem = false,
+})
+
+-- Aba principal
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+-- Aviso dentro do hub
+MainTab:CreateParagraph({
+    Title = "Aviso",
+    Content = "nao tentem vender, este script foi feito pela store lucky."
+})
+
+-- Estados dos toggles
+local estiloOn = false
+local habilidadeOn = false
+local yenOn = false
+
 -- Enhanced Anti-Ban System
 local AntiBan = {
-    Enabled = true,
+    Enabled = false,
     SuspicionLevel = 0,
     MaxSuspicion = 10,
     ActionCount = 0,
@@ -15,7 +44,7 @@ local AntiBan = {
     ErrorRate = 0,
     MaxErrorRate = 0.1,
     RandomSeed = os.time(),
-    PauseOnSuspicion = true,
+    PauseOnSuspicion = false,
     SuspicionTimeout = 60
 }
 
@@ -54,7 +83,7 @@ end
 -- Preventive Measures
 local function ApplyPreventiveMeasures()
     -- Randomize timing
-    local randomDelay = math.random(100, 500) / 100 -- 1-5 segundos
+    local randomDelay = math.random(1, 5)
     task.wait(randomDelay)
     
     -- Pause execution when suspicious
@@ -70,61 +99,6 @@ local function ApplyPreventiveMeasures()
         AntiBan.ErrorRate = math.max(0, AntiBan.ErrorRate - 0.05)
     end
 end
-
--- Rayfield
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
-local Window = Rayfield:CreateWindow({
-    Name = "Store Lucky",
-    LoadingTitle = "Store Lucky",
-    LoadingSubtitle = "by Zeternal",
-    Theme = "Default", 
-    DisableRayfieldPrompts = true,
-    DisableBuildWarnings = true,
-    ConfigurationSaving = { Enabled = false },
-    Discord = { Enabled = false },
-    KeySystem = false,
-})
-
--- Aba principal
-local MainTab = Window:CreateTab("Main", 4483362458)
-
--- Aba de Segurança
-local SecurityTab = Window:CreateTab("Security", 4483362458)
-
--- Aviso dentro do hub
-MainTab:CreateParagraph({
-    Title = "Aviso",
-    Content = "nao tentem vender, este script foi feito pela store lucky."
-})
-
--- Status do Anti-Ban
-local AntiBanStatus = SecurityTab:CreateParagraph({
-    Title = "Sistema Anti-Ban",
-    Content = "Status: Ativo\nNível de Suspeita: 0/10"
-})
-
--- Toggle do Anti-Ban
-SecurityTab:CreateToggle({
-    Name = "Ativar Sistema Anti-Ban",
-    CurrentValue = true,
-    Flag = "AntiBanToggle",
-    Callback = function(Value)
-        AntiBan.Enabled = Value
-        notify(Value and "Sistema Anti-Ban Ativado" or "Sistema Anti-Ban Desativado")
-    end,
-})
-
--- Informações de Segurança
-SecurityTab:CreateParagraph({
-    Title = "Informações",
-    Content = "O sistema monitora ações suspeitas\ne pausa automaticamente se necessário"
-})
-
--- Estados dos toggles
-local estiloOn = false
-local habilidadeOn = false
-local yenOn = false
 
 ----------------------------------------------------------------
 -- 🔗 REMOTE (MANTIDO ORIGINAL)
@@ -149,42 +123,6 @@ local function notify(msg)
     })
 end
 
--- Função segura para invocar remote
-local function SafeInvokeServer(value)
-    if not AntiBan.Enabled then
-        pcall(function()
-            remote:InvokeServer(value)
-        end)
-        return
-    end
-    
-    -- Aplicar medidas preventivas
-    ApplyPreventiveMeasures()
-    
-    -- Verificar status de suspeita
-    if CheckBanStatus() then
-        print("ALERTA: Comportamento suspeito detectado!")
-        AntiBanStatus:SetTitle("Sistema Anti-Ban")
-        AntiBanStatus:SetContent("Status: Alerta!\nNível de Suspeita: " .. AntiBan.SuspicionLevel .. "/10")
-        return
-    end
-    
-    -- Executar ação com delay randomizado
-    local success, err = pcall(function()
-        remote:InvokeServer(value)
-    end)
-    
-    if not success then
-        AntiBan.ErrorRate = AntiBan.ErrorRate + 0.01
-    else
-        AntiBan.ErrorRate = math.max(0, AntiBan.ErrorRate - 0.005)
-    end
-    
-    -- Atualizar status
-    AntiBanStatus:SetTitle("Sistema Anti-Ban")
-    AntiBanStatus:SetContent("Status: Ativo\nNível de Suspeita: " .. AntiBan.SuspicionLevel .. "/10")
-end
-
 ----------------------------------------------------------------
 -- 🎯 Toggle de Estilo
 ----------------------------------------------------------------
@@ -199,8 +137,10 @@ local EstiloToggle = MainTab:CreateToggle({
         if estiloOn then
             task.spawn(function()
                 while estiloOn do
-                    SafeInvokeServer(1)
-                    task.wait(math.random(150, 300) / 100) -- 1.5-3 segundos
+                    pcall(function()
+                        remote:InvokeServer(1)
+                    end)
+                    task.wait(1)
                 end
             end)
         end
@@ -221,8 +161,10 @@ local HabilidadeToggle = MainTab:CreateToggle({
         if habilidadeOn then
             task.spawn(function()
                 while habilidadeOn do
-                    SafeInvokeServer(4)
-                    task.wait(math.random(150, 300) / 100) -- 1.5-3 segundos
+                    pcall(function()
+                        remote:InvokeServer(4)
+                    end)
+                    task.wait(1)
                 end
             end)
         end
@@ -243,32 +185,12 @@ local YenToggle = MainTab:CreateToggle({
         if yenOn then
             task.spawn(function()
                 while yenOn do
-                    SafeInvokeServer(2) -- Valor 2 para Yen
-                    task.wait(math.random(150, 300) / 100) -- 1.5-3 segundos
+                    pcall(function()
+                        remote:InvokeServer(2)
+                    end)
+                    task.wait(1)
                 end
             end)
         end
-    end,
-})
-
--- Botão de teste adicional
-MainTab:CreateButton({
-    Name = "Testar botão",
-    Callback = function()
-        print("Botão funcionando!")
-        notify("Hub funcionando corretamente!")
-    end,
-})
-
--- Botão para resetar nível de suspeita
-SecurityTab:CreateButton({
-    Name = "Resetar Nível de Suspeita",
-    Callback = function()
-        AntiBan.SuspicionLevel = 0
-        AntiBan.ErrorRate = 0
-        AntiBan.ActionCount = 0
-        notify("Nível de suspeita resetado!")
-        AntiBanStatus:SetTitle("Sistema Anti-Ban")
-        AntiBanStatus:SetContent("Status: Ativo\nNível de Suspeita: 0/10")
     end,
 })
